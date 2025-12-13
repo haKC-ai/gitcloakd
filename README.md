@@ -1,4 +1,8 @@
-![gitcloakd](img/gitcloakd_logo.png)
+
+
+
+
+
 ## `gitCloakd` **Hide ya repos. Hide ya code. They out here hacking everybody.**
 
 [![Python](https://img.shields.io/badge/python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
@@ -105,6 +109,7 @@ flowchart LR
     style Full fill:#2b213a,stroke:#fede5d,color:#fede5d
     style Dark fill:#1a1a2e,stroke:#72f1b8,color:#72f1b8
 ```
+![gitcloakd](img/gitcloakd_logo.png)
 
 ## Try It First (Test Mode)
 
