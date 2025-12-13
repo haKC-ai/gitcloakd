@@ -1,7 +1,9 @@
 
 
 
-
+<p align="center">
+  <img src="img/gitcloakd.gif" alt="gitcloakd demo" width="640">
+</p>
 
 ## `gitCloakd` **Hide ya repos. Hide ya code. They out here hacking everybody.**
 
