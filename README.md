@@ -1,8 +1,5 @@
-# gitcloakd
-
 ![gitcloakd](img/gitcloakd_logo.png)
-
-**Cloak your repos. Hide your code. Stay encrypted.**
+## `gitCloakd` **Hide ya repos. Hide ya code. They out here hacking everybody.**
 
 [![Python](https://img.shields.io/badge/python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -10,9 +7,72 @@
 [![GitHub](https://img.shields.io/badge/github-integration-181717?style=flat-square&logo=github&logoColor=white)](https://github.com)
 [![Security](https://img.shields.io/badge/security-maximum-brightgreen?style=flat-square)](https://github.com/haKC-ai/gitcloakd)
 
+## Python API
+
+Use gitcloakd programmatically in your code, CI/CD pipelines, or git hooks:
+```python
+from gitcloakd import encrypt_files, encrypt_matching, decrypt_files
+
+# Encrypt specific files
+result = encrypt_files([".env", "config/secrets.yaml"])
+print(f"Encrypted: {result['encrypted']}")
+
+# Encrypt all files matching configured patterns
+result = encrypt_matching()
+
+# Or with custom patterns
+result = encrypt_matching(["*.env", "*.key", "**/*.pem"])
+
+# Decrypt files
+result = decrypt_files([".env.gpg", "config/secrets.yaml.gpg"])
+```
+```
+# What you see (authorized):
+my-secret-startup-project/
+  src/api/payments.py
+  src/core/algorithm.py
+  README.md (real documentation)
+
+# What everyone else sees:
+550e8400-e29b-41d4-a716-446655440000/
+  encrypted.gpg
+  README.md ("This repository is encrypted")
+```
+### Three encryption modes. 
+- **Selective** for hiding secrets.
+- **Full** for hiding your entire codebase.
+- **Dark** for hiding *everything* - code, git history, commit messages, even the project name (swapped with a random UUID).
+- Unlike git-crypt or git-secret, Dark Mode leaves zero traces. Your laptop gets stolen? They see nothing - local storage is GPG encrypted too.
+
+
+
+## Why Encrypt Your Repos?
+
+| Threat | What happens | gitcloakd fix |
+|--------|--------------|---------------|
+| GitHub gets breached | Your code is leaked | They get encrypted blobs |
+| Employee goes rogue | Copies private repos | Can't decrypt without your key |
+| Laptop stolen | Attacker clones your repos | Local storage is GPG encrypted |
+| Subpoena/legal request | GitHub hands over data | They hand over encrypted data |
+| Nosy coworker/investor | Snoops your private repos | Sees nothing useful |
+| You leave a company | They still have repo access | Revoke their key, re-encrypt |
+
+**You control the keys. Not GitHub. Not your employer. You.**
+
+## Use Cases
+
+| You want to... | Mode |
+|----------------|------|
+| Keep `.env` and API keys encrypted | Selective |
+| Open source project with private secrets | Selective |
+| Private codebase only your team can read | Full |
+| GitHub breach won't leak your code | Full |
+| Stealth project - hide everything including repo name | Dark |
+| Side project your employer can't trace back to you | Dark |
+| Laptop stolen - attacker sees nothing | Dark + `secure init` |
+
 ---
 
-Three encryption modes. **Selective** for hiding secrets. **Full** for hiding your entire codebase. **Dark** for hiding *everything* - code, git history, commit messages, even the project name (swapped with a random UUID). Unlike git-crypt or git-secret, Dark Mode leaves zero traces. Your laptop gets stolen? They see nothing - local storage is GPG encrypted too.
 
 ## Encryption Modes Comparison
 
@@ -23,29 +83,22 @@ Three encryption modes. **Selective** for hiding secrets. **Full** for hiding yo
 | ![Dark](https://img.shields.io/badge/-Dark-black?style=flat-square) | **EVERYTHING** | **Hidden** | **UUID Only** | encrypted.gpg + README only |
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Lato', 'fontSize': '15px', 'primaryColor': '#2b213a', 'primaryTextColor': '#ff7edb', 'primaryBorderColor': '#ff7edb', 'lineColor': '#72f1b8', 'secondaryColor': '#34294f', 'tertiaryColor': '#1a1a2e' }}}%%
-flowchart TB
-    subgraph Selective["SELECTIVE Mode (Default)"]
-        direction TB
-        S_CODE["Source Code<br/>(visible)"]
-        S_SECRETS["Secrets<br/>(.env.gpg)"]
-        S_HISTORY["Git History<br/>(visible)"]
+flowchart LR
+    subgraph Selective["SELECTIVE"]
+        S1("code visible")
+        S2("secrets.gpg")
+        S3("history visible")
     end
 
-    subgraph Full["FULL Mode"]
-        direction TB
-        F_BLOB["encrypted.gpg<br/>(entire codebase)"]
-        F_README["README.md"]
-        F_CONFIG[".gitcloakd/"]
-        F_HISTORY["Git History<br/>(visible)"]
+    subgraph Full["FULL"]
+        F1("encrypted.gpg")
+        F2("history visible")
     end
 
-    subgraph Dark["DARK Mode (Maximum Security)"]
-        direction TB
-        D_BLOB["encrypted.gpg<br/>(code + history + real name)"]
-        D_README["README.md"]
-        D_UUID["UUID repo name<br/>(real name encrypted)"]
-        D_WRAPPER["Single commit<br/>(no real history)"]
+    subgraph Dark["DARK"]
+        D1("encrypted.gpg")
+        D2("UUID name")
+        D3("no history")
     end
 
     style Selective fill:#34294f,stroke:#ff7edb,color:#ff7edb
@@ -136,23 +189,24 @@ gitcloakd encrypt --all
 ```
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Lato', 'fontSize': '15px', 'primaryColor': '#2b213a', 'primaryTextColor': '#ff7edb', 'primaryBorderColor': '#ff7edb', 'lineColor': '#72f1b8', 'secondaryColor': '#34294f', 'tertiaryColor': '#1a1a2e' }}}%%
 flowchart LR
     subgraph Before["Your Repo"]
-        CODE1["main.py"]
-        SECRET1[".env<br/>API_KEY=secret"]
+        CODE1("main.py")
+        SECRET1(".env<br/>API_KEY=secret")
     end
 
     subgraph After["After Encryption"]
-        CODE2["main.py<br/>(unchanged)"]
-        SECRET2[".env.gpg<br/>(encrypted)"]
+        CODE2("main.py<br/>unchanged")
+        SECRET2(".env.gpg<br/>encrypted")
     end
 
     CODE1 --> CODE2
     SECRET1 -->|GPG| SECRET2
 
-    style SECRET1 fill:#fe4450,stroke:#ff7edb,color:#1a1a2e
+    style SECRET1 fill:#fe4450,stroke:#fe4450,color:#1a1a2e
     style SECRET2 fill:#72f1b8,stroke:#72f1b8,color:#1a1a2e
+
+    linkStyle 1 stroke:#fe4450
 ```
 
 ---
@@ -192,7 +246,6 @@ myrepo/
 ```
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Lato', 'fontSize': '15px', 'primaryColor': '#2b213a', 'primaryTextColor': '#ff7edb', 'primaryBorderColor': '#ff7edb', 'lineColor': '#72f1b8', 'secondaryColor': '#34294f', 'tertiaryColor': '#1a1a2e', 'actorTextColor': '#ff7edb', 'actorBkg': '#2b213a', 'actorBorder': '#ff7edb', 'signalColor': '#72f1b8', 'signalTextColor': '#f97e72', 'noteTextColor': '#1a1a2e', 'noteBkgColor': '#fede5d', 'noteBorderColor': '#fede5d' }}}%%
 sequenceDiagram
     participant Owner
     participant gitcloakd
@@ -207,7 +260,7 @@ sequenceDiagram
     Unauthorized->>Repo: git clone
     Note over Unauthorized: Only sees encrypted.gpg
     Unauthorized--xgitcloakd: decrypt --full
-    Note over Unauthorized: ACCESS DENIED (no GPG key)
+    Note over Unauthorized: ACCESS DENIED - no GPG key
 
     Owner->>Repo: git clone
     Owner->>gitcloakd: decrypt --full
@@ -257,28 +310,29 @@ Git log shows: `"gitcloakd: encrypted repository state"`
 No history. No code. No clues. Not even the project name.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Lato', 'fontSize': '15px', 'primaryColor': '#2b213a', 'primaryTextColor': '#ff7edb', 'primaryBorderColor': '#ff7edb', 'lineColor': '#72f1b8', 'secondaryColor': '#34294f', 'tertiaryColor': '#1a1a2e' }}}%%
 flowchart TB
-    subgraph Real["Real Repository (Encrypted Inside)"]
+    subgraph Real["Real Repository"]
         direction TB
-        R_NAME["my-secret-project<br/>(real name)"]
-        R_CODE["Source Code"]
-        R_GIT[".git/<br/>100 commits<br/>5 branches"]
-        R_AUTHORS["Contributors List"]
+        R_NAME("my-secret-project<br/>real name")
+        R_CODE("Source Code")
+        R_GIT(".git/<br/>100 commits, 5 branches")
+        R_AUTHORS("Contributors List")
     end
 
     subgraph Visible["What randos see"]
         direction TB
-        V_UUID["550e8400-...<br/>(random UUID)"]
-        V_BLOB["encrypted.gpg"]
-        V_README["README.md<br/>'This is encrypted'"]
-        V_GIT["Single commit"]
+        V_UUID("550e8400-...<br/>random UUID")
+        V_BLOB("encrypted.gpg")
+        V_README("README.md<br/>This is encrypted")
+        V_GIT("Single commit")
     end
 
     Real -->|"GPG Encrypt"| Visible
 
     style Real fill:#72f1b8,stroke:#72f1b8,color:#1a1a2e
     style Visible fill:#1a1a2e,stroke:#ff7edb,color:#ff7edb
+
+    linkStyle 0 stroke:#72f1b8
 ```
 
 ### Adding Users with Name Control
@@ -321,23 +375,22 @@ gitcloakd secure status   # check status
 | Session data | Plaintext | GPG Encrypted |
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Lato', 'fontSize': '15px', 'primaryColor': '#2b213a', 'primaryTextColor': '#ff7edb', 'primaryBorderColor': '#ff7edb', 'lineColor': '#72f1b8', 'secondaryColor': '#34294f', 'tertiaryColor': '#1a1a2e' }}}%%
 flowchart TB
-    subgraph Unlocked["Unlocked State (Working)"]
+    subgraph Unlocked["Unlocked - Working"]
         direction LR
-        U_CMDS["gitcloakd commands"]
-        U_DATA["Decrypted data<br/>(in memory)"]
+        U_CMDS("gitcloakd commands")
+        U_DATA("Decrypted data<br/>in memory")
     end
 
-    subgraph Locked["Locked State (Protected)"]
+    subgraph Locked["Locked - Protected"]
         direction LR
-        L_GPG["~/.gitcloakd/<br/>config.gpg<br/>repos.gpg<br/>history.gpg"]
+        L_GPG("~/.gitcloakd/<br/>config.gpg<br/>repos.gpg<br/>history.gpg")
     end
 
     subgraph Thief["Stolen Laptop"]
         direction LR
-        T_ACCESS["No GPG key<br/>No passphrase"]
-        T_RESULT["Cannot read<br/>ANYTHING"]
+        T_ACCESS("No GPG key<br/>No passphrase")
+        T_RESULT("Cannot read<br/>ANYTHING")
     end
 
     Unlocked -->|"gitcloakd lock"| Locked
@@ -346,6 +399,9 @@ flowchart TB
     style Unlocked fill:#72f1b8,stroke:#72f1b8,color:#1a1a2e
     style Locked fill:#fede5d,stroke:#fede5d,color:#1a1a2e
     style Thief fill:#fe4450,stroke:#fe4450,color:#1a1a2e
+
+    linkStyle 0 stroke:#72f1b8
+    linkStyle 1 stroke:#fede5d
 ```
 
 ### Key Management
@@ -539,24 +595,23 @@ if is_initialized():
 ## Architecture
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Lato', 'fontSize': '15px', 'primaryColor': '#2b213a', 'primaryTextColor': '#ff7edb', 'primaryBorderColor': '#ff7edb', 'lineColor': '#72f1b8', 'secondaryColor': '#34294f', 'tertiaryColor': '#1a1a2e' }}}%%
 graph TB
     subgraph CLI["CLI Commands"]
-        INIT[init]
-        ENC[encrypt/decrypt]
-        SEC[secure]
-        CLEAN[clean]
-        DARK[dark]
-        CHECK[check]
+        INIT(init)
+        ENC(encrypt/decrypt)
+        SEC(secure)
+        CLEAN(clean)
+        DARK(dark)
+        CHECK(check)
     end
 
     subgraph Core["Encryption Engines"]
-        SELECTIVE[Selective Engine]
-        FULL[Full Encryption]
-        DARKMODE[Dark Mode]
-        STORAGE[Secure Storage]
-        AUDIT[Audit Log]
-        CLEANER[Memory Cleaner]
+        SELECTIVE(Selective Engine)
+        FULL(Full Encryption)
+        DARKMODE(Dark Mode)
+        STORAGE(Secure Storage)
+        AUDIT(Audit Log)
+        CLEANER(Memory Cleaner)
     end
 
     subgraph Data["Protected Data"]
