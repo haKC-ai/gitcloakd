@@ -212,9 +212,12 @@ class DarkMode:
             return manifest.get("public_id")
         return None
 
-    def encrypt_to_wrapper(self) -> Dict[str, Any]:
+    def encrypt_to_wrapper(self, rename_to_uuid: bool = False) -> Dict[str, Any]:
         """
         Encrypt the ENTIRE repository (including .git and real name) into wrapper state.
+
+        Args:
+            rename_to_uuid: If True, rename the repository folder to the UUID after encryption
 
         Returns:
             Summary of encryption
@@ -224,6 +227,7 @@ class DarkMode:
             "files_encrypted": 0,
             "real_commits": 0,
             "public_uuid": None,
+            "new_path": None,
             "errors": []
         }
 
@@ -336,6 +340,33 @@ class DarkMode:
             self._write_manifest(manifest)
 
         results["success"] = True
+
+        # Rename folder to UUID if requested
+        if rename_to_uuid and results["public_uuid"]:
+            parent_dir = self.repo_path.parent
+            original_name = self.repo_path.name
+            new_path = parent_dir / results["public_uuid"]
+            if new_path.exists():
+                results["errors"].append(f"Cannot rename: {new_path} already exists")
+            else:
+                try:
+                    # Record original folder name in encrypted name_map (only visible to authorized users)
+                    name_map = self._read_encrypted_name_map()
+                    if name_map:
+                        name_map["original_folder_name"] = original_name
+                        recipients = [u["key_id"] for u in name_map.get("users", []) if u.get("key_id")]
+                        if recipients:
+                            self._write_encrypted_name_map(name_map, recipients)
+
+                    shutil.move(str(self.repo_path), str(new_path))
+                    results["new_path"] = str(new_path)
+                    results["original_name"] = original_name
+                    # Update internal path reference
+                    self.repo_path = new_path
+                    self.config_dir = new_path / ".gitcloakd"
+                except Exception as e:
+                    results["errors"].append(f"Failed to rename folder: {e}")
+
         return results
 
     def decrypt_from_wrapper(self) -> Dict[str, Any]:
@@ -703,7 +734,7 @@ If you're seeing only this README and `encrypted.gpg`, you don't have access.
 - Contributors cannot be determined
 
 ---
-Protected with [gitcloakd](https://github.com/haKCer/gitcloakd) Dark Mode
+Protected with [gitcloakd](https://github.com/haKC-ai/gitcloakd) Dark Mode
 """
 
         readme.write_text(content)
@@ -721,6 +752,10 @@ Protected with [gitcloakd](https://github.com/haKCer/gitcloakd) Dark Mode
 # Temporary decryption files
 *.decrypted
 *.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
 """
 
         gitignore.write_text(content)
@@ -764,7 +799,26 @@ Protected with [gitcloakd](https://github.com/haKCer/gitcloakd) Dark Mode
         )
 
     def _cleanup_empty_dirs(self) -> None:
-        """Remove empty directories."""
+        """Remove empty directories and OS junk files."""
+        # First pass: remove OS junk files
+        junk_files = ['.DS_Store', 'Thumbs.db', 'desktop.ini']
+        for dirpath, dirnames, filenames in os.walk(str(self.repo_path)):
+            dir_path = Path(dirpath)
+
+            if ".git" in str(dir_path) or ".gitcloakd" in str(dir_path):
+                continue
+            if self.WRAPPER_BACKUP in str(dir_path):
+                continue
+
+            for junk in junk_files:
+                junk_path = dir_path / junk
+                if junk_path.exists():
+                    try:
+                        junk_path.unlink()
+                    except OSError:
+                        pass
+
+        # Second pass: remove empty directories
         for dirpath, dirnames, filenames in os.walk(str(self.repo_path), topdown=False):
             dir_path = Path(dirpath)
 

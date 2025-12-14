@@ -813,12 +813,13 @@ def _run_dark_init(non_interactive: bool = False, key_id: str = None, real_name:
     })
 
 
-def _run_dark_encrypt(non_interactive: bool = False, passphrase: str = None):
+def _run_dark_encrypt(non_interactive: bool = False, passphrase: str = None, rename: bool = False):
     """Encrypt repository to dark mode wrapper state.
 
     Args:
         non_interactive: Skip confirmation prompts
         passphrase: GPG passphrase for encryption operations
+        rename: Rename folder to UUID after encryption
     """
     dark = DarkMode(passphrase=passphrase)
 
@@ -831,6 +832,9 @@ def _run_dark_encrypt(non_interactive: bool = False, passphrase: str = None):
     if name_info and name_info.get('real_name'):
         console.print(f"[dim]Project: {name_info['real_name']} -> {name_info['public_uuid']}[/dim]\n")
 
+    if rename:
+        console.print("[yellow]Folder will be renamed to UUID after encryption[/yellow]\n")
+
     if not non_interactive and not Confirm.ask("Proceed with dark mode encryption?"):
         return
 
@@ -842,7 +846,7 @@ def _run_dark_encrypt(non_interactive: bool = False, passphrase: str = None):
         task = progress.add_task("Encrypting entire repository...", total=None)
 
         try:
-            results = dark.encrypt_to_wrapper()
+            results = dark.encrypt_to_wrapper(rename_to_uuid=rename)
             progress.update(task, description="[green]Complete![/green]")
         except Exception as e:
             progress.update(task, description=f"[red]Failed: {e}[/red]")
@@ -861,6 +865,8 @@ def _run_dark_encrypt(non_interactive: bool = False, passphrase: str = None):
     table = Table(show_header=False, box=None)
     table.add_row("[cyan]Files encrypted:[/cyan]", str(results['files_encrypted']))
     table.add_row("[cyan]Commits hidden:[/cyan]", str(results['real_commits']))
+    if results.get('new_path'):
+        table.add_row("[cyan]Renamed to:[/cyan]", results['new_path'])
     console.print(table)
 
     console.print("\n[bold green]Your repository is now completely dark![/bold green]")
@@ -869,7 +875,8 @@ def _run_dark_encrypt(non_interactive: bool = False, passphrase: str = None):
 
     audit(AuditEventType.ENCRYPT, "Dark mode encryption completed", {
         "files": results['files_encrypted'],
-        "commits_hidden": results['real_commits']
+        "commits_hidden": results['real_commits'],
+        "renamed": results.get('new_path')
     })
 
 
@@ -985,12 +992,13 @@ def security_check():
 @click.option('--dark', '-d', is_flag=True, help='DARK mode - encrypt entire repo INCLUDING git history')
 @click.option('--yes', '-y', is_flag=True, help='Non-interactive mode, skip confirmations')
 @click.option('--passphrase', '-p', help='GPG passphrase (for non-interactive mode)', envvar='GITCLOAKD_PASSPHRASE')
-def encrypt(files: tuple, encrypt_all: bool, full: bool, dark: bool, yes: bool, passphrase: str):
+@click.option('--rename', '-r', is_flag=True, help='Rename folder to UUID after encryption (dark mode only)')
+def encrypt(files: tuple, encrypt_all: bool, full: bool, dark: bool, yes: bool, passphrase: str, rename: bool):
     """Encrypt files or all sensitive files."""
 
     if dark:
         # Dark mode - encrypt EVERYTHING including git history
-        _run_dark_encrypt(non_interactive=yes, passphrase=passphrase)
+        _run_dark_encrypt(non_interactive=yes, passphrase=passphrase, rename=rename)
         return
 
     if full:

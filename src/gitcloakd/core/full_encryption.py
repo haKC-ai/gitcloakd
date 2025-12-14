@@ -469,7 +469,7 @@ gitcloakd encrypt  # Re-encrypt with new user
 ```
 
 ---
-Secured with [gitcloakd](https://github.com/haKCer/gitcloakd)
+Secured with [gitcloakd](https://github.com/haKC-ai/gitcloakd)
 """
 
         if "gitcloakd" not in existing_content:
