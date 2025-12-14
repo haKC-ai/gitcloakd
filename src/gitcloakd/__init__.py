@@ -56,7 +56,7 @@ Usage:
   gitcloakd secure init           # Protect local data
 """
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __author__ = "HaKC.dev"
 __license__ = "MIT"
 
