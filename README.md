@@ -13,7 +13,42 @@
 [![GitHub](https://img.shields.io/badge/github-integration-181717?style=flat-square&logo=github&logoColor=white)](https://github.com)
 [![Security](https://img.shields.io/badge/security-maximum-brightgreen?style=flat-square)](https://github.com/haKC-ai/gitcloakd)
 
-## `Check out the endstate repo here` https://github.com/haKC-ai/07bf37a1-ce68-4bd1-8e71-7767f7b0d07a
+## Interactive Demos & Resources
+
+| Resource | Description | Link |
+|----------|-------------|------|
+| [![Demo](https://img.shields.io/badge/Colab-Demo_Notebook-F9AB00?style=flat-square&logo=googlecolab&logoColor=white)](https://drive.google.com/file/d/1MFmQCljP1cs57bwpMDW14MxEfOUzGTgC/view?usp=drive_link) | Quick interactive demo - clone & decrypt an encrypted repo | [Open in Colab](https://drive.google.com/file/d/1MFmQCljP1cs57bwpMDW14MxEfOUzGTgC/view?usp=drive_link) |
+| [![Guide](https://img.shields.io/badge/Colab-Complete_Guide-F9AB00?style=flat-square&logo=googlecolab&logoColor=white)](https://drive.google.com/file/d/1f2hGf3aZbrgN7_nqeAbtMthtjs_rlAWi/view?usp=sharing) | Full reference - all modes, CLI commands, Python API | [Open in Colab](https://drive.google.com/file/d/1f2hGf3aZbrgN7_nqeAbtMthtjs_rlAWi/view?usp=sharing) |
+| [![Troubleshooting](https://img.shields.io/badge/Colab-Troubleshooting-F9AB00?style=flat-square&logo=googlecolab&logoColor=white)](https://drive.google.com/file/d/1MmbopbuhXvHo6gW0D0c_uyZCwrFywCzr/view?usp=drive_link) | User management, GPG keys, common issues | [Open in Colab](https://drive.google.com/file/d/1MmbopbuhXvHo6gW0D0c_uyZCwrFywCzr/view?usp=drive_link) |
+| [![Encrypted Repo](https://img.shields.io/badge/GitHub-Encrypted_Demo_Repo-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/haKC-ai/07bf37a1-ce68-4bd1-8e71-7767f7b0d07a) | Live Dark Mode encrypted repo - see what unauthorized users see | [View on GitHub](https://github.com/haKC-ai/07bf37a1-ce68-4bd1-8e71-7767f7b0d07a) |
+
+```mermaid
+flowchart LR
+    subgraph Notebooks["📓 Colab Notebooks"]
+        DEMO["01: Demo<br/>Try it now"]
+        GUIDE["02: Complete Guide<br/>All features"]
+        TROUBLE["03: Troubleshooting<br/>User management"]
+    end
+
+    subgraph EncryptedRepo["🔒 Encrypted Demo Repo"]
+        UUID["07bf37a1-...<br/>UUID name"]
+        BLOB["encrypted.gpg"]
+    end
+
+    subgraph DecryptedState["🔓 After Decrypt"]
+        REAL["gitcloakd/<br/>real name"]
+        CODE["Full source code"]
+        HISTORY["Git history"]
+    end
+
+    DEMO -->|"Clone & decrypt"| EncryptedRepo
+    GUIDE -->|"Learn all modes"| EncryptedRepo
+    EncryptedRepo -->|"gitcloakd decrypt --dark"| DecryptedState
+
+    style Notebooks fill:#F9AB00,stroke:#F9AB00,color:#1a1a2e
+    style EncryptedRepo fill:#1a1a2e,stroke:#ff7edb,color:#ff7edb
+    style DecryptedState fill:#72f1b8,stroke:#72f1b8,color:#1a1a2e
+```
 
 ## Python API
 
