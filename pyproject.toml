@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitcloakd"
-version = "1.0.7"
+version = "1.0.8"
 description = "Cloak Git repositories with GPG encryption - hide your code in plain sight"
 readme = "README.md"
 license = {text = "MIT"}
