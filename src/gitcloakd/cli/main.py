@@ -3,17 +3,15 @@ gitcloakd CLI - Main entry point
 Colorful menu-driven interface with haKCer styling
 """
 
-import sys
 import click
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Prompt, Confirm
-from rich.text import Text
 from rich.markdown import Markdown
 import questionary
 from questionary import Style
@@ -30,7 +28,6 @@ from gitcloakd.crypto.gpg import GPGManager
 from gitcloakd.github.client import GitHubClient
 from gitcloakd.github.analyzer import RepoAnalyzer
 from gitcloakd.agents.manager import AgentManager
-from gitcloakd.alerts.notifier import AlertNotifier
 
 
 # Initialize Rich console
@@ -231,7 +228,6 @@ def ensure_gpg_available() -> bool:
     Ensure GPG is available, installing it if necessary.
     Returns True if GPG is available (either already installed or successfully installed).
     """
-    import shutil
 
     if check_gpg_installed():
         return True
@@ -665,7 +661,7 @@ def _run_full_decrypt():
             return
 
     if results['errors']:
-        print_warning(f"Completed with errors:")
+        print_warning("Completed with errors:")
         for err in results['errors']:
             console.print(f"  [red]•[/red] {err}")
     else:
@@ -975,7 +971,6 @@ def security_check():
 
     # Summary
     console.print("\n[bold]Summary:[/bold]")
-    total_issues = len(results['critical']) + len(results['warnings'])
     if results['critical']:
         console.print(f"  [red]CRITICAL ISSUES: {len(results['critical'])}[/red]")
     if results['warnings']:
@@ -1015,7 +1010,7 @@ def encrypt(files: tuple, encrypt_all: bool, full: bool, dark: bool, yes: bool, 
             TextColumn("[progress.description]{task.description}"),
             console=console
         ) as progress:
-            task = progress.add_task("Encrypting files...", total=None)
+            progress.add_task("Encrypting files...", total=None)
             results = gc.encrypt_repo()
 
         print_success(f"Encrypted {len(results['encrypted'])} files")
@@ -1562,7 +1557,7 @@ def secure_init():
             return
 
     print_success("Secure local storage initialized!")
-    console.print(f"\n[dim]Storage location: ~/.gitcloakd/[/dim]")
+    console.print("\n[dim]Storage location: ~/.gitcloakd/[/dim]")
     console.print(f"[dim]Encryption key: {key_id}[/dim]")
 
     console.print("\n[bold]Important:[/bold]")
@@ -1715,7 +1710,7 @@ def clone(repo_url: str, dest: Optional[str]):
     """
     print_banner()
 
-    console.print(f"[bold]Cloning encrypted repository...[/bold]")
+    console.print("[bold]Cloning encrypted repository...[/bold]")
     console.print(f"[dim]{repo_url}[/dim]\n")
 
     with Progress(
@@ -2032,7 +2027,6 @@ def test_create(path: Optional[str], mode: str):
     Creates a sample repo with fake sensitive files so you can
     experiment with gitcloakd without risking real data.
     """
-    import tempfile
     import shutil
     from datetime import datetime
 
@@ -2311,7 +2305,7 @@ def test_dry_run(mode: str):
 
         total_size = sum((repo_path / f).stat().st_size for f in all_files)
 
-        console.print(f"[bold red]ALL files would be encrypted into encrypted.gpg:[/bold red]")
+        console.print("[bold red]ALL files would be encrypted into encrypted.gpg:[/bold red]")
         console.print(f"  [cyan]•[/cyan] Total files: {len(all_files)}")
         console.print(f"  [cyan]•[/cyan] Total size: {total_size / 1024:.1f} KB")
 
@@ -2340,7 +2334,7 @@ def test_dry_run(mode: str):
         )
         branch_count = len([b for b in result.stdout.strip().split('\n') if b]) if result.returncode == 0 else "?"
 
-        console.print(f"[bold red]EVERYTHING would be encrypted and hidden:[/bold red]")
+        console.print("[bold red]EVERYTHING would be encrypted and hidden:[/bold red]")
         console.print(f"  [cyan]•[/cyan] Files: {len(all_files)}")
         console.print(f"  [cyan]•[/cyan] Total size: {total_size / 1024:.1f} KB")
         console.print(f"  [cyan]•[/cyan] Git commits: {commit_count}")

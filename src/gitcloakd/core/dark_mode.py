@@ -27,12 +27,10 @@ import tarfile
 import io
 import json
 import uuid
-import secrets
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 import gnupg
-import hashlib
 
 
 class DarkMode:

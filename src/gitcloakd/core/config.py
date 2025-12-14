@@ -2,8 +2,6 @@
 gitcloakd Configuration Management
 """
 
-import os
-import json
 import yaml
 from pathlib import Path
 from dataclasses import dataclass, field, asdict

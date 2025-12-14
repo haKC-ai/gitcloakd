@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 
 from gitcloakd.core.encryption import GitCrypted, GPGNotInstalledException
-from gitcloakd.core.config import Config
 
 
 def encrypt_files(

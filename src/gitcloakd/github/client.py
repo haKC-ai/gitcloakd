@@ -5,7 +5,6 @@ Interacts with GitHub via gh CLI and API
 
 import subprocess
 import json
-from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 

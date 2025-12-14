@@ -20,10 +20,8 @@ WARNING: Some data may persist in:
 For maximum security, use full-disk encryption on your system.
 """
 
-import os
 import gc
 import sys
-import ctypes
 import shutil
 import secrets
 from pathlib import Path
@@ -435,12 +433,8 @@ class MemoryCleaner:
 
             # On Linux, we can try to advise the kernel
             if sys.platform == 'linux':
-                try:
-                    # Use madvise to suggest memory release
-                    import mmap
-                    # This is limited but shows intent
-                except ImportError:
-                    pass
+                # madvise could be used here for memory release hints
+                pass
 
             return True
 

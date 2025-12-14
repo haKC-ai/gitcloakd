@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import requests
 
-from gitcloakd.core.config import Config, AlertConfig
+from gitcloakd.core.config import Config
 
 
 @dataclass

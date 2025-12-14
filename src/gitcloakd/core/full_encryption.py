@@ -5,7 +5,6 @@ Encrypts the ENTIRE codebase so unauthorized users only see GPG files.
 
 import os
 import subprocess
-import shutil
 import tarfile
 import io
 from pathlib import Path

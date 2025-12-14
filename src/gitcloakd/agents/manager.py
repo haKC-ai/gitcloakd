@@ -4,7 +4,7 @@ Manages AI coding agents access to encrypted repositories
 """
 
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from datetime import datetime
 
 from gitcloakd.core.config import Config, AgentConfig

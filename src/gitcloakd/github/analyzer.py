@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from gitcloakd.github.client import GitHubClient, Repository
+from gitcloakd.github.client import GitHubClient
 
 
 @dataclass

@@ -17,9 +17,7 @@ import gnupg
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Any, Dict
-from dataclasses import dataclass, asdict
-import base64
-import hashlib
+from dataclasses import dataclass
 
 
 @dataclass

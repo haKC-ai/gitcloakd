@@ -191,7 +191,7 @@ class GPGManager:
             keyserver = self.KEYSERVERS[0]
 
         try:
-            result = subprocess.run(
+            subprocess.run(
                 [
                     "gpg",
                     "--keyserver", keyserver,
@@ -260,7 +260,7 @@ class GPGManager:
             keyserver = self.KEYSERVERS[0]
 
         try:
-            result = subprocess.run(
+            subprocess.run(
                 [
                     "gpg",
                     "--keyserver", keyserver,

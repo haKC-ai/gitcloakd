@@ -3,12 +3,11 @@ gitcloakd Core Encryption Engine
 Handles GPG encryption/decryption for Git repositories
 """
 
-import os
 import subprocess
 import shutil
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Tuple, Any
+from typing import Optional, List, Dict, Any
 import gnupg
 
 from gitcloakd.core.config import Config, UserConfig, AgentConfig
@@ -515,7 +514,7 @@ class GitCrypted:
         gitattributes = self.repo_path / ".gitattributes"
         if gitattributes.exists():
             lines = gitattributes.read_text().split("\n")
-            lines = [l for l in lines if "gitcloakd" not in l.lower()]
+            lines = [line for line in lines if "gitcloakd" not in line.lower()]
             gitattributes.write_text("\n".join(lines))
 
         return True
