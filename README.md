@@ -1,8 +1,4 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/haKC-ai/gitcloakd/main/img/gitcloakd_cli.png" alt="gitcloakd CLI" width="720">
-</p>
-
-<p align="center">
   <img src="https://raw.githubusercontent.com/haKC-ai/gitcloakd/main/img/gitcloakd.gif" alt="gitcloakd demo" width="640">
 </p>
 
