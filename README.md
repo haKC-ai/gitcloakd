@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/haKC-ai/gitcloakd/main/img/gitcloakd.gif" alt="gitcloakd demo" width="640">
+  <img src="https://raw.githubusercontent.com/haKC-ai/gitcloakd/main/img/gitcloakd.gif" alt="gitcloakd demo">
 </p>
 
 ```
@@ -27,6 +27,11 @@
 ![GPG](https://img.shields.io/badge/encryption-GPG-red?style=for-the-badge&logo=gnuprivacyguard&logoColor=white)
 
 ---
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/haKC-ai/gitcloakd/main/img/gitcloaked_before_after.png" alt="gitcloakd demo" >
+</p>
+
 
 ## [::: TRY IT NOW :::]
 
