@@ -100,6 +100,10 @@ class DarkMode:
             })()
         return self._config
 
+    def is_initialized(self) -> bool:
+        """Check if dark mode has been initialized."""
+        return (self.repo_path / self.MANIFEST_FILE).exists()
+
     def is_wrapper_state(self) -> bool:
         """Check if repo is in encrypted wrapper state (what unauthorized users see)."""
         return (self.repo_path / self.ENCRYPTED_BLOB).exists()
@@ -109,7 +113,7 @@ class DarkMode:
         return (
             (self.repo_path / ".git").exists()
             and not (self.repo_path / self.ENCRYPTED_BLOB).exists()
-            and (self.repo_path / self.WRAPPER_BACKUP).exists()
+            and self.is_initialized()
         )
 
     def initialize_dark_mode(
@@ -293,18 +297,15 @@ class DarkMode:
             results["errors"].append(f"GPG encryption failed: {encrypted.status}")
             return results
 
-        # Backup current .git for wrapper operations
+        # Clear any existing wrapper backup (we don't need it - .git is in the tarball)
         wrapper_backup = self.repo_path / self.WRAPPER_BACKUP
+        if wrapper_backup.exists():
+            shutil.rmtree(wrapper_backup)
+
+        # Remove current .git (it's already packed in the tarball)
         real_git = self.repo_path / ".git"
-
         if real_git.exists():
-            if wrapper_backup.exists():
-                shutil.rmtree(wrapper_backup)
-            wrapper_backup.mkdir()
-            (wrapper_backup / "real_git").mkdir()
-
-            for item in real_git.iterdir():
-                shutil.move(str(item), str(wrapper_backup / "real_git"))
+            shutil.rmtree(real_git)
 
         # Write encrypted blob
         encrypted_blob = self.repo_path / self.ENCRYPTED_BLOB
@@ -389,16 +390,10 @@ class DarkMode:
             results["errors"].append("No encrypted blob found")
             return results
 
-        # Backup wrapper .git
-        wrapper_backup = self.repo_path / self.WRAPPER_BACKUP
-        wrapper_backup.mkdir(exist_ok=True)
-
+        # Remove wrapper .git (will be replaced by real .git from tarball)
         current_git = self.repo_path / ".git"
         if current_git.exists():
-            wrapper_git_backup = wrapper_backup / "wrapper_git"
-            if wrapper_git_backup.exists():
-                shutil.rmtree(wrapper_git_backup)
-            shutil.copytree(current_git, wrapper_git_backup)
+            shutil.rmtree(current_git)
 
         # Decrypt the blob
         encrypted_data = encrypted_blob.read_text()
@@ -412,7 +407,7 @@ class DarkMode:
             results["errors"].append("Make sure your GPG key is available and passphrase is correct")
             return results
 
-        # Extract tarball
+        # Extract tarball (includes .git with full history)
         tar_buffer = io.BytesIO(decrypted.data)
         try:
             with tarfile.open(fileobj=tar_buffer, mode="r:gz") as tar:
@@ -426,16 +421,6 @@ class DarkMode:
         except tarfile.TarError as e:
             results["errors"].append(f"Failed to extract: {e}")
             return results
-
-        # Restore real .git if we have it backed up
-        real_git_backup = wrapper_backup / "real_git"
-        if real_git_backup.exists():
-            if current_git.exists():
-                shutil.rmtree(current_git)
-
-            current_git.mkdir()
-            for item in real_git_backup.iterdir():
-                shutil.move(str(item), str(current_git))
 
         # Count restored commits
         try:

@@ -342,6 +342,21 @@ flowchart TB
     linkStyle 0 stroke:#72f1b8
 ```
 
+### Dark Mode Collaboration Limitations
+
+Dark Mode encrypts everything into a single `encrypted.gpg` blob. This means:
+
+- **No merge capability** - Two users can't merge changes; whoever pushes last wins
+- **Coordination required** - Users need to communicate who's working
+- **Pull → Decrypt → Work → Encrypt → Push** - Always get latest first, push quickly
+
+**Best for:**
+- Solo projects you want hidden
+- Archiving finished projects
+- Repos where one person pushes and others just pull/read
+
+**For active team collaboration:** Use **Selective Mode** instead - it allows normal git workflows while protecting secrets.
+
 ### Adding Users with Name Control
 
 Control whether users see the real project name or just the UUID:
