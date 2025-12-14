@@ -735,7 +735,13 @@ Protected with [gitcloakd](https://github.com/haKCer/gitcloakd) Dark Mode
         """Initialize/reset wrapper git with single commit."""
         git_dir = self.repo_path / ".git"
 
-        if not git_dir.exists():
+        # Check if .git exists AND is a valid git repo (has HEAD file)
+        # After encryption, .git exists but is empty, so we need to reinit
+        git_head = git_dir / "HEAD"
+        if not git_dir.exists() or not git_head.exists():
+            # Remove empty .git dir if it exists
+            if git_dir.exists():
+                shutil.rmtree(git_dir)
             subprocess.run(
                 ["git", "init"],
                 cwd=str(self.repo_path),
