@@ -111,7 +111,7 @@ flowchart LR
     style Full fill:#2b213a,stroke:#fede5d,color:#fede5d
     style Dark fill:#1a1a2e,stroke:#72f1b8,color:#72f1b8
 ```
-![gitcloakd](img/gitcloakd_logo.png)
+![gitcloakd](https://raw.githubusercontent.com/haKC-ai/gitcloakd/main/img/gitcloakd_logo.png)
 
 ## Try It First (Test Mode)
 
@@ -240,7 +240,7 @@ myrepo/
 
 ### What you get
 
-> [Watch the decrypt demo](img/gitcloaded_logo.mp4)
+> [Watch the decrypt demo](https://raw.githubusercontent.com/haKC-ai/gitcloakd/main/img/gitcloaded_logo.mp4)
 
 After `gitcloakd decrypt --full`:
 ```
