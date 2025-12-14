@@ -3,22 +3,22 @@
 </p>
 
 ```
-        ┌──────────────────────── [ R E L E A S E   I N F O ] ──────────────────────────┐
-        │                                                                               │
-        │  NAME................................................gitcloakd                │
-        │  TYPE.......................................GPG Encryption for Git Repos      │
-        │  VERSION........................................................v1.0.10       │
-        │  PLATFORM............................................Python 3.9+ / Cross-OS   │
-        │  CATEGORY..............................................Security / Encryption  │
-        │  ENCRYPTION MODES........................................................3x   │
-        │                                                                               │
-        │  Hide ya repos. Hide ya code. They out here hacking everybody.               │
-        │                                                                               │
-        │  [*] SELECTIVE - Encrypt specific files (.env, keys, secrets)                 │
-        │  [*] FULL - Encrypt entire codebase into single blob                          │
-        │  [*] DARK - Encrypt EVERYTHING including git history + UUID repo name         │
-        │                                                                               │
-        └───────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────── [ R E L E A S E   I N F O ] ──────────────────────────┐
+│                                                                               │
+│  NAME................................................gitcloakd                │
+│  TYPE.......................................GPG Encryption for Git Repos      │
+│  VERSION........................................................v1.0.10       │
+│  PLATFORM............................................Python 3.9+ / Cross-OS   │
+│  CATEGORY..............................................Security / Encryption  │
+│  ENCRYPTION MODES........................................................3x   │
+│                                                                               │
+│  Hide ya repos. Hide ya code. They out here hacking everybody.                │
+│                                                                               │
+│  [*] SELECTIVE - Encrypt specific files (.env, keys, secrets)                 │
+│  [*] FULL - Encrypt entire codebase into single blob                          │
+│  [*] DARK - Encrypt EVERYTHING including git history + UUID repo name         │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ![Python](https://img.shields.io/badge/python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
@@ -507,6 +507,16 @@ git add -A && git commit -m "Added team member" && git push
 ---
 
 ## All Commands
+```
+     ░▒█▀▀█▒░:'######::'##::::::::'#######:::::'###::::'##:::'##:'########::
+     ░▒█░▄▄▒░'##... ##: ##:::::::'##.... ##:::'## ##::: ##::'##:: ##.... ##:
+     ░▒█▄▄▀▒░ ##:::..:: ##::::::: ##:::: ##::'##:. ##:: ##:'##::: ##:::: ##:
+     ░▒▀█▀▒▒░ ##::::::: ##::::::: ##:::: ##:'##:::. ##: #####:::: ##:::: ##:
+     ░▒▒█░▒▒░ ##::::::: ##::::::: ##:::: ##: #########: ##. ##::: ##:::: ##:
+     ░▒▄█▄▒▒░ ##::: ##: ##::::::: ##:::: ##: ##.... ##: ##:. ##:: ##:::: ##:
+     ░▀▀█▀▀▒░. ######:: ########:. #######:: ##:::: ##: ##::. ##: ########::
+     ░░▒█░░▒░:......:::........:::.......:::..:::::..::..::::..::........:::
+```
 
 | Command | Description | Flags |
 |---------|-------------|-------|
