@@ -13,6 +13,8 @@
 [![GitHub](https://img.shields.io/badge/github-integration-181717?style=flat-square&logo=github&logoColor=white)](https://github.com)
 [![Security](https://img.shields.io/badge/security-maximum-brightgreen?style=flat-square)](https://github.com/haKC-ai/gitcloakd)
 
+## `Check out the endstate repo here` https://github.com/haKC-ai/07bf37a1-ce68-4bd1-8e71-7767f7b0d07a
+
 ## Python API
 
 Use gitcloakd programmatically in your code, CI/CD pipelines, or git hooks:
