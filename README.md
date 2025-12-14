@@ -30,6 +30,10 @@
 
 ## [::: TRY IT NOW :::]
 
+```pip install gitcloakd```
+
+or see how it works first 
+
 ![Colab](https://img.shields.io/badge/INTERACTIVE-NOTEBOOKS-F9AB00?style=for-the-badge&logo=googlecolab)
 ![Live Demo](https://img.shields.io/badge/LIVE-ENCRYPTED%20REPO-181717?style=for-the-badge&logo=github)
 
