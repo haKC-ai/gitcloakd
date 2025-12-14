@@ -424,15 +424,41 @@ class GitCrypted:
             "recommendations": []
         }
 
+        # Directories to skip during scanning (cloud storage, temp, etc)
+        skip_dirs = {
+            'CloudStorage', 'Library', '.Trash', 'node_modules', '.git',
+            '__pycache__', '.cache', 'venv', '.venv', 'env', '.env',
+            'dist', 'build', '.tox', '.pytest_cache', '.mypy_cache'
+        }
+
+        def safe_glob(base_path: Path, pattern: str):
+            """Safe glob that skips problematic directories."""
+            import os
+            for root, dirs, files in os.walk(str(base_path)):
+                # Skip cloud storage, library dirs, and other problematic paths
+                dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
+                # Check depth - don't go too deep
+                depth = root.replace(str(base_path), '').count(os.sep)
+                if depth > 10:
+                    dirs.clear()
+                    continue
+                import fnmatch
+                for f in files:
+                    if fnmatch.fnmatch(f, pattern):
+                        yield Path(root) / f
+
         # Check current files
         for pattern in self.config.auto_encrypt_patterns:
-            for path in self.repo_path.glob(f"**/{pattern}"):
-                if path.suffix != ".gpg":
-                    results["sensitive_files"].append({
-                        "path": str(path.relative_to(self.repo_path)),
-                        "encrypted": False,
-                        "recommendation": "Encrypt this file"
-                    })
+            try:
+                for path in safe_glob(self.repo_path, pattern):
+                    if path.suffix != ".gpg":
+                        results["sensitive_files"].append({
+                            "path": str(path.relative_to(self.repo_path)),
+                            "encrypted": False,
+                            "recommendation": "Encrypt this file"
+                        })
+            except (OSError, TimeoutError, PermissionError):
+                continue  # Skip inaccessible paths
 
         # Check git history for sensitive files
         try:

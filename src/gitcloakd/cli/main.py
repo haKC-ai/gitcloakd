@@ -4,6 +4,7 @@ Colorful menu-driven interface with haKCer styling
 """
 
 import click
+import random
 from pathlib import Path
 from typing import Optional
 
@@ -33,6 +34,27 @@ from gitcloakd.agents.manager import AgentManager
 # Initialize Rich console
 console = Console()
 
+# Global theme colors - set randomly on each command
+THEME_COLORS = {
+    'synthwave': {'primary': '#ff7edb', 'secondary': '#72f1b8', 'accent': '#fede5d', 'warning': '#f97e72', 'info': '#36f9f6'},
+    'neon': {'primary': '#00ff00', 'secondary': '#ff00ff', 'accent': '#00ffff', 'warning': '#ffff00', 'info': '#ff0080'},
+    'tokyo_night': {'primary': '#7aa2f7', 'secondary': '#bb9af7', 'accent': '#7dcfff', 'warning': '#f7768e', 'info': '#9ece6a'},
+    'cyberpunk': {'primary': '#ff0080', 'secondary': '#00ffff', 'accent': '#ffff00', 'warning': '#ff00ff', 'info': '#00ff00'},
+    'matrix': {'primary': '#00ff00', 'secondary': '#00cc00', 'accent': '#009900', 'warning': '#33ff33', 'info': '#00ff00'},
+    'dracula': {'primary': '#ff79c6', 'secondary': '#bd93f9', 'accent': '#8be9fd', 'warning': '#ffb86c', 'info': '#50fa7b'},
+    'nord': {'primary': '#88c0d0', 'secondary': '#81a1c1', 'accent': '#5e81ac', 'warning': '#d08770', 'info': '#a3be8c'},
+    'gruvbox': {'primary': '#fb4934', 'secondary': '#b8bb26', 'accent': '#fabd2f', 'warning': '#fe8019', 'info': '#83a598'},
+}
+
+# Current session theme
+_current_theme = None
+
+def set_random_theme():
+    """Set a random theme for this session."""
+    global _current_theme
+    _current_theme = random.choice(list(THEME_COLORS.keys()))
+    return _current_theme
+
 # HaKCer styling for questionary
 HAKC_STYLE = Style([
     ('qmark', 'fg:#00ff00 bold'),       # Green question mark
@@ -47,23 +69,82 @@ HAKC_STYLE = Style([
 ])
 
 
-def print_banner():
+def safe_select(message: str, choices: list, animated: bool = False) -> str:
+    """Wrapper for questionary.select that falls back to themed numbered menu on error."""
+    global _current_theme
+
+    # Set theme if not already set
+    if _current_theme is None:
+        set_random_theme()
+
+    theme = THEME_COLORS.get(_current_theme, THEME_COLORS['synthwave'])
+    primary = theme['primary']
+    secondary = theme['secondary']
+    accent = theme['accent']
+
+    try:
+        result = questionary.select(message, choices=choices, style=HAKC_STYLE).ask()
+        return result
+    except (AttributeError, Exception):
+        # Fallback to themed numbered menu with optional animation
+        menu_text = f"\n[bold {primary}]{message}[/bold {primary}]\n"
+        for i, choice in enumerate(choices):
+            menu_text += f"  [{accent}]{i}[/{accent}]. [{secondary}]{choice}[/{secondary}]\n"
+
+        if animated:
+            try:
+                from hakcer import show_banner
+                import tempfile
+                import os
+                # Write menu to temp file and animate it
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                    # Strip Rich markup for hakcer
+                    plain_menu = f"\n{message}\n"
+                    for i, choice in enumerate(choices):
+                        plain_menu += f"  {i}. {choice}\n"
+                    f.write(plain_menu)
+                    temp_path = f.name
+                show_banner(custom_file=temp_path, speed_preference='fast', theme=_current_theme, hold_time=0.0)
+                os.unlink(temp_path)
+            except Exception:
+                console.print(menu_text)
+        else:
+            console.print(menu_text)
+
+        selection = Prompt.ask(f"[{primary}]Select option[/{primary}]", default="0")
+        try:
+            idx = int(selection)
+            if 0 <= idx < len(choices):
+                return choices[idx]
+        except ValueError:
+            pass
+        return choices[0] if choices else None
+
+
+def print_banner(animated: bool = False):
     """Print the gitcloakd banner with haKCer styling."""
+    import os
+
+    # Set theme for this session
+    theme = set_random_theme()
+
     try:
         from hakcer import show_banner
-        import os
         # Get path to banner file relative to package
         banner_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'banner.txt')
         if not os.path.exists(banner_path):
             # Try alternate location
             banner_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'banner.txt')
         if os.path.exists(banner_path):
-            show_banner(custom_file=banner_path, effect_name='decrypt', theme='synthwave', hold_time=2.0)
+            if animated:
+                # Menu gets slower effect
+                show_banner(custom_file=banner_path, effect_name='scattered', theme=theme, hold_time=1.0)
+            else:
+                # Regular commands get fast random effect
+                show_banner(custom_file=banner_path, speed_preference='fast', theme=theme, hold_time=0.0)
         else:
-            # Fallback if banner file not found
             _print_fallback_banner()
     except Exception:
-        # Fallback if hakcer not installed or has issues
         _print_fallback_banner()
 
 
@@ -336,11 +417,7 @@ def _run_init_wizard(gc: GitCrypted):
     key_choices = [
         f"{k['keyid']} - {k['uids'][0]}" for k in keys
     ]
-    selected = questionary.select(
-        "Select your GPG key:",
-        choices=key_choices,
-        style=HAKC_STYLE
-    ).ask()
+    selected = safe_select("Select your GPG key:", key_choices)
 
     key_id = selected.split(" - ")[0]
     key_email = keys[key_choices.index(selected)]['uids'][0]
@@ -446,23 +523,11 @@ def _create_gpg_key_wizard(gpg: GPGManager):
     email = Prompt.ask("Your email")
 
     console.print("\n[dim]Key options:[/dim]")
-    key_type = questionary.select(
-        "Key type:",
-        choices=["RSA (recommended)", "DSA", "ECDSA"],
-        style=HAKC_STYLE
-    ).ask()
+    key_type = safe_select("Key type:", ["RSA (recommended)", "DSA", "ECDSA"])
 
-    key_length = questionary.select(
-        "Key length:",
-        choices=["4096 (most secure)", "2048 (faster)", "3072"],
-        style=HAKC_STYLE
-    ).ask()
+    key_length = safe_select("Key length:", ["4096 (most secure)", "2048 (faster)", "3072"])
 
-    expire = questionary.select(
-        "Expiration:",
-        choices=["2 years (recommended)", "1 year", "Never", "Custom"],
-        style=HAKC_STYLE
-    ).ask()
+    expire = safe_select("Expiration:", ["2 years (recommended)", "1 year", "Never", "Custom"])
 
     expire_map = {
         "2 years (recommended)": "2y",
@@ -543,11 +608,7 @@ def _run_full_encryption_init():
 
     # Select key
     key_choices = [f"{k['keyid']} - {k['uids'][0]}" for k in keys]
-    selected = questionary.select(
-        "Select your GPG key:",
-        choices=key_choices,
-        style=HAKC_STYLE
-    ).ask()
+    selected = safe_select("Select your GPG key:", key_choices)
 
     key_id = selected.split(" - ")[0]
     key_email = keys[key_choices.index(selected)]['uids'][0]
@@ -746,11 +807,7 @@ def _run_dark_init(non_interactive: bool = False, key_id: str = None, real_name:
             key_email = key_email.split("<")[1].rstrip(">")
     else:
         key_choices = [f"{k['keyid']} - {k['uids'][0]}" for k in keys]
-        selected = questionary.select(
-            "Select your GPG key:",
-            choices=key_choices,
-            style=HAKC_STYLE
-        ).ask()
+        selected = safe_select("Select your GPG key:", key_choices)
 
         selected_key_id = selected.split(" - ")[0]
         key_email = keys[key_choices.index(selected)]['uids'][0]
@@ -941,6 +998,10 @@ def _run_dark_decrypt(non_interactive: bool = False, passphrase: str = None):
 @cli.command('check')
 def security_check():
     """Run comprehensive security checklist."""
+    global _current_theme
+    import tempfile
+    import os
+
     print_banner()
     console.print("\n[bold cyan]═══ Security Checklist ═══[/bold cyan]\n")
 
@@ -953,36 +1014,82 @@ def security_check():
         results = security_checklist()
         progress.update(task, description="[green]Complete![/green]")
 
+    # Build output text for animation
+    output_lines = []
+
     # Critical issues
     if results['critical']:
-        console.print("\n[bold red][CRITICAL][/bold red]")
+        output_lines.append("\n[CRITICAL]")
         for item in results['critical']:
-            console.print(f"  [red][-][/red] {item}")
+            output_lines.append(f"  [-] {item}")
 
     # Warnings
     if results['warnings']:
-        console.print("\n[bold yellow][WARNINGS][/bold yellow]")
+        output_lines.append("\n[WARNINGS]")
         for item in results['warnings']:
-            console.print(f"  [yellow][!][/yellow] {item}")
+            output_lines.append(f"  [!] {item}")
 
     # Passed checks
     if results['passed']:
-        console.print("\n[bold green][PASSED][/bold green]")
+        output_lines.append("\n[PASSED]")
         for item in results['passed']:
-            console.print(f"  [green][+][/green] {item}")
+            output_lines.append(f"  [+] {item}")
 
     # Recommendations
-    console.print("\n[bold cyan][RECOMMENDATIONS][/bold cyan]")
+    output_lines.append("\n[RECOMMENDATIONS]")
     for item in results['recommendations']:
-        console.print(f"  [cyan]•[/cyan] {item}")
+        output_lines.append(f"  • {item}")
 
     # Summary
-    console.print("\n[bold]Summary:[/bold]")
+    output_lines.append("\nSummary:")
     if results['critical']:
-        console.print(f"  [red]CRITICAL ISSUES: {len(results['critical'])}[/red]")
+        output_lines.append(f"  CRITICAL ISSUES: {len(results['critical'])}")
     if results['warnings']:
-        console.print(f"  [yellow]Warnings: {len(results['warnings'])}[/yellow]")
-    console.print(f"  [green]Passed: {len(results['passed'])}[/green]")
+        output_lines.append(f"  Warnings: {len(results['warnings'])}")
+    output_lines.append(f"  Passed: {len(results['passed'])}")
+
+    # Animate with hakcer
+    try:
+        from hakcer import show_banner
+
+        # Set theme if not set
+        if _current_theme is None:
+            set_random_theme()
+
+        # Write to temp file and animate
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write('\n'.join(output_lines))
+            temp_path = f.name
+
+        show_banner(custom_file=temp_path, speed_preference='fast', theme=_current_theme, hold_time=0.5)
+        os.unlink(temp_path)
+    except Exception:
+        # Fallback to Rich console output
+        if results['critical']:
+            console.print("\n[bold red][CRITICAL][/bold red]")
+            for item in results['critical']:
+                console.print(f"  [red][-][/red] {item}")
+
+        if results['warnings']:
+            console.print("\n[bold yellow][WARNINGS][/bold yellow]")
+            for item in results['warnings']:
+                console.print(f"  [yellow][!][/yellow] {item}")
+
+        if results['passed']:
+            console.print("\n[bold green][PASSED][/bold green]")
+            for item in results['passed']:
+                console.print(f"  [green][+][/green] {item}")
+
+        console.print("\n[bold cyan][RECOMMENDATIONS][/bold cyan]")
+        for item in results['recommendations']:
+            console.print(f"  [cyan]•[/cyan] {item}")
+
+        console.print("\n[bold]Summary:[/bold]")
+        if results['critical']:
+            console.print(f"  [red]CRITICAL ISSUES: {len(results['critical'])}[/red]")
+        if results['warnings']:
+            console.print(f"  [yellow]Warnings: {len(results['warnings'])}[/yellow]")
+        console.print(f"  [green]Passed: {len(results['passed'])}[/green]")
 
 
 @cli.command()
@@ -1136,11 +1243,7 @@ def add_agent(agent_type: Optional[str], name: Optional[str]):
         return
 
     if not agent_type:
-        agent_type = questionary.select(
-            "Select agent type:",
-            choices=['claude', 'copilot', 'gemini', 'custom'],
-            style=HAKC_STYLE
-        ).ask()
+        agent_type = safe_select("Select agent type:", ['claude', 'copilot', 'gemini', 'custom'])
 
     try:
         agent = agent_mgr.add_agent(agent_type, name)
@@ -1318,9 +1421,9 @@ def menu():
     print_banner()
 
     while True:
-        choice = questionary.select(
+        choice = safe_select(
             "What would you like to do?",
-            choices=[
+            [
                 "Initialize repository",
                 "Encrypt files",
                 "Decrypt files",
@@ -1332,8 +1435,8 @@ def menu():
                 "GPG key management",
                 "Exit"
             ],
-            style=HAKC_STYLE
-        ).ask()
+            animated=True
+        )
 
         if choice == "Exit" or choice is None:
             console.print("\n[bold green]Stay encrypted![/bold green]")
@@ -1373,11 +1476,7 @@ def _user_menu():
     gc = GitCrypted()
     config = Config.load_repo()
 
-    action = questionary.select(
-        "User management:",
-        choices=["Add user", "Remove user", "List users", "Back"],
-        style=HAKC_STYLE
-    ).ask()
+    action = safe_select("User management:", ["Add user", "Remove user", "List users", "Back"])
 
     if action == "Add user":
         email = Prompt.ask("User email")
@@ -1389,7 +1488,7 @@ def _user_menu():
         if not users:
             print_warning("No users to remove")
             return
-        email = questionary.select("Select user:", choices=users, style=HAKC_STYLE).ask()
+        email = safe_select("Select user:", users)
         gc.remove_user(email)
         print_success(f"Removed: {email}")
     elif action == "List users":
@@ -1402,18 +1501,10 @@ def _agent_menu():
     agent_mgr = AgentManager()
     config = Config.load_repo()
 
-    action = questionary.select(
-        "Agent management:",
-        choices=["Add agent", "Remove agent", "List agents", "Generate GitHub Action", "Back"],
-        style=HAKC_STYLE
-    ).ask()
+    action = safe_select("Agent management:", ["Add agent", "Remove agent", "List agents", "Generate GitHub Action", "Back"])
 
     if action == "Add agent":
-        agent_type = questionary.select(
-            "Agent type:",
-            choices=['claude', 'copilot', 'gemini', 'custom'],
-            style=HAKC_STYLE
-        ).ask()
+        agent_type = safe_select("Agent type:", ['claude', 'copilot', 'gemini', 'custom'])
         agent = agent_mgr.add_agent(agent_type)
         print_success(f"Added: {agent.name}")
     elif action == "Remove agent":
@@ -1421,7 +1512,7 @@ def _agent_menu():
         if not agents:
             print_warning("No agents to remove")
             return
-        name = questionary.select("Select agent:", choices=agents, style=HAKC_STYLE).ask()
+        name = safe_select("Select agent:", agents)
         agent_mgr.remove_agent(name)
         print_success(f"Removed: {name}")
     elif action == "List agents":
@@ -1441,11 +1532,7 @@ def _gpg_menu():
     """GPG key management submenu."""
     gpg = GPGManager()
 
-    action = questionary.select(
-        "GPG key management:",
-        choices=["List keys", "Create new key", "Import key", "Export key", "Publish to keyserver", "Back"],
-        style=HAKC_STYLE
-    ).ask()
+    action = safe_select("GPG key management:", ["List keys", "Create new key", "Import key", "Export key", "Publish to keyserver", "Back"])
 
     if action == "List keys":
         keys = gpg.list_keys(secret=True)
@@ -1463,14 +1550,14 @@ def _gpg_menu():
     elif action == "Export key":
         keys = gpg.list_keys()
         key_choices = [f"{k['keyid']} - {k['uids'][0]}" for k in keys]
-        selected = questionary.select("Select key:", choices=key_choices, style=HAKC_STYLE).ask()
+        selected = safe_select("Select key:", key_choices)
         key_id = selected.split(" - ")[0]
         pub_key = gpg.export_public_key(key_id)
         console.print(Panel(pub_key, title="Public Key"))
     elif action == "Publish to keyserver":
         keys = gpg.list_keys(secret=True)
         key_choices = [f"{k['keyid']} - {k['uids'][0]}" for k in keys]
-        selected = questionary.select("Select key:", choices=key_choices, style=HAKC_STYLE).ask()
+        selected = safe_select("Select key:", key_choices)
         key_id = selected.split(" - ")[0]
         try:
             gpg.publish_key(key_id)
@@ -1542,11 +1629,7 @@ def secure_init():
         return
 
     key_choices = [f"{k['keyid']} - {k['uids'][0]}" for k in keys]
-    selected = questionary.select(
-        "Select GPG key for local encryption:",
-        choices=key_choices,
-        style=HAKC_STYLE
-    ).ask()
+    selected = safe_select("Select GPG key for local encryption:", key_choices)
 
     key_id = selected.split(" - ")[0]
 
