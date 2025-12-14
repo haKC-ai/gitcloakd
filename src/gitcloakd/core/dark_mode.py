@@ -76,11 +76,18 @@ class DarkMode:
         ".gitignore",
     ]
 
-    def __init__(self, repo_path: Optional[str] = None):
-        """Initialize dark mode repository."""
+    def __init__(self, repo_path: Optional[str] = None, passphrase: Optional[str] = None):
+        """Initialize dark mode repository.
+
+        Args:
+            repo_path: Path to repository (default: current directory)
+            passphrase: GPG passphrase for decryption operations (optional,
+                       uses gpg-agent if not provided)
+        """
         self.repo_path = Path(repo_path) if repo_path else Path.cwd()
         self.config_dir = self.repo_path / ".gitcloakd"
         self.gpg = gnupg.GPG()
+        self._passphrase = passphrase
         self._config = None
 
     @property
@@ -366,11 +373,14 @@ class DarkMode:
 
         # Decrypt the blob
         encrypted_data = encrypted_blob.read_text()
-        decrypted = self.gpg.decrypt(encrypted_data)
+        if self._passphrase:
+            decrypted = self.gpg.decrypt(encrypted_data, passphrase=self._passphrase)
+        else:
+            decrypted = self.gpg.decrypt(encrypted_data)
 
         if not decrypted.ok:
             results["errors"].append(f"GPG decryption failed: {decrypted.status}")
-            results["errors"].append("Make sure your GPG key is available")
+            results["errors"].append("Make sure your GPG key is available and passphrase is correct")
             return results
 
         # Extract tarball
@@ -615,7 +625,14 @@ class DarkMode:
 
         try:
             encrypted_data = name_map_file.read_text()
-            decrypted = self.gpg.decrypt(encrypted_data)
+            # Use passphrase if provided, otherwise rely on gpg-agent
+            if self._passphrase:
+                decrypted = self.gpg.decrypt(
+                    encrypted_data,
+                    passphrase=self._passphrase
+                )
+            else:
+                decrypted = self.gpg.decrypt(encrypted_data)
 
             if not decrypted.ok:
                 return None

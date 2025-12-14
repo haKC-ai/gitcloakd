@@ -281,7 +281,11 @@ def cli(ctx):
 @click.option('--wizard', '-w', is_flag=True, help='Run interactive setup wizard')
 @click.option('--full', '-f', is_flag=True, help='Enable FULL repository encryption (encrypt entire codebase)')
 @click.option('--dark', '-d', is_flag=True, help='DARK mode - encrypt EVERYTHING including git history with UUID naming')
-def init(wizard: bool, full: bool, dark: bool):
+@click.option('--yes', '-y', is_flag=True, help='Non-interactive mode, skip confirmations')
+@click.option('--key', '-k', help='GPG key ID to use (for non-interactive mode)')
+@click.option('--name', '-n', help='Real project name (for dark mode non-interactive)')
+@click.option('--passphrase', '-p', help='GPG passphrase (for non-interactive mode)', envvar='GITCLOAKD_PASSPHRASE')
+def init(wizard: bool, full: bool, dark: bool, yes: bool, key: str, name: str, passphrase: str):
     """Initialize gitcloakd in current repository."""
     print_banner()
 
@@ -291,7 +295,7 @@ def init(wizard: bool, full: bool, dark: bool):
 
     if dark:
         # Dark mode - encrypt EVERYTHING including git history
-        _run_dark_init()
+        _run_dark_init(non_interactive=yes, key_id=key, real_name=name, passphrase=passphrase)
         return
 
     if full:
@@ -675,40 +679,51 @@ def _run_full_decrypt():
 # DARK MODE (TOTAL ENCRYPTION INCLUDING GIT HISTORY + UUID NAMING)
 # =============================================================================
 
-def _run_dark_init():
-    """Initialize repository with DARK encryption mode."""
+def _run_dark_init(non_interactive: bool = False, key_id: str = None, real_name: str = None, passphrase: str = None):
+    """Initialize repository with DARK encryption mode.
+
+    Args:
+        non_interactive: Skip confirmations and prompts
+        key_id: GPG key ID to use (required for non-interactive)
+        real_name: Real project name (required for non-interactive)
+        passphrase: GPG passphrase (optional, uses gpg-agent if not provided)
+    """
     console.print("\n[bold cyan]=== DARK Mode Encryption ===[/bold cyan]\n")
 
     console.print("[bold red][!] MAXIMUM SECURITY: DARK MODE[/bold red]")
     console.print("This encrypts EVERYTHING including git history, commits, and branches.")
     console.print("Repository will use a random UUID name - real name is encrypted.\n")
 
-    console.print("[bold]What unauthorized users will see:[/bold]")
-    console.print("  [cyan]•[/cyan] encrypted.gpg (single blob)")
-    console.print("  [cyan]•[/cyan] README.md (generic 'this is encrypted' message)")
-    console.print("  [cyan]•[/cyan] Random UUID repository name (e.g., a1b2c3d4-...)")
-    console.print("  [cyan]•[/cyan] Single git commit (no real history visible)")
-    console.print("")
+    if not non_interactive:
+        console.print("[bold]What unauthorized users will see:[/bold]")
+        console.print("  [cyan]•[/cyan] encrypted.gpg (single blob)")
+        console.print("  [cyan]•[/cyan] README.md (generic 'this is encrypted' message)")
+        console.print("  [cyan]•[/cyan] Random UUID repository name (e.g., a1b2c3d4-...)")
+        console.print("  [cyan]•[/cyan] Single git commit (no real history visible)")
+        console.print("")
 
-    console.print("[bold]What is HIDDEN from unauthorized users:[/bold]")
-    console.print("  [cyan]•[/cyan] Real project name")
-    console.print("  [cyan]•[/cyan] All source code")
-    console.print("  [cyan]•[/cyan] Complete git history")
-    console.print("  [cyan]•[/cyan] All commit messages")
-    console.print("  [cyan]•[/cyan] Branch names")
-    console.print("  [cyan]•[/cyan] File structure")
-    console.print("  [cyan]•[/cyan] Contributors list")
-    console.print("")
+        console.print("[bold]What is HIDDEN from unauthorized users:[/bold]")
+        console.print("  [cyan]•[/cyan] Real project name")
+        console.print("  [cyan]•[/cyan] All source code")
+        console.print("  [cyan]•[/cyan] Complete git history")
+        console.print("  [cyan]•[/cyan] All commit messages")
+        console.print("  [cyan]•[/cyan] Branch names")
+        console.print("  [cyan]•[/cyan] File structure")
+        console.print("  [cyan]•[/cyan] Contributors list")
+        console.print("")
 
-    if not Confirm.ask("Continue with dark mode setup?"):
-        return
+        if not Confirm.ask("Continue with dark mode setup?"):
+            return
 
     gpg = GPGManager()
-    dark = DarkMode()
+    dark = DarkMode(passphrase=passphrase)
 
     # Check for GPG keys
     keys = gpg.list_keys(secret=True)
     if not keys:
+        if non_interactive:
+            print_error("No GPG keys found. Cannot continue in non-interactive mode.")
+            return
         print_warning("No GPG keys found.")
         if Confirm.ask("Create a new GPG key?"):
             _create_gpg_key_wizard(gpg)
@@ -718,23 +733,44 @@ def _run_dark_init():
         print_error("Cannot continue without a GPG key.")
         return
 
-    # Select key
-    key_choices = [f"{k['keyid']} - {k['uids'][0]}" for k in keys]
-    selected = questionary.select(
-        "Select your GPG key:",
-        choices=key_choices,
-        style=HAKC_STYLE
-    ).ask()
+    # Select key (use provided key_id in non-interactive mode)
+    if non_interactive and key_id:
+        # Find matching key
+        matching_key = None
+        for k in keys:
+            if k['keyid'] == key_id or k['keyid'].endswith(key_id):
+                matching_key = k
+                break
+        if not matching_key:
+            print_error(f"GPG key not found: {key_id}")
+            return
+        selected_key_id = matching_key['keyid']
+        key_email = matching_key['uids'][0]
+        if "<" in key_email:
+            key_email = key_email.split("<")[1].rstrip(">")
+    else:
+        key_choices = [f"{k['keyid']} - {k['uids'][0]}" for k in keys]
+        selected = questionary.select(
+            "Select your GPG key:",
+            choices=key_choices,
+            style=HAKC_STYLE
+        ).ask()
 
-    key_id = selected.split(" - ")[0]
-    key_email = keys[key_choices.index(selected)]['uids'][0]
-    if "<" in key_email:
-        key_email = key_email.split("<")[1].rstrip(">")
+        selected_key_id = selected.split(" - ")[0]
+        key_email = keys[key_choices.index(selected)]['uids'][0]
+        if "<" in key_email:
+            key_email = key_email.split("<")[1].rstrip(">")
 
     # Get real project name
-    console.print("\n[bold]Project Information[/bold]")
-    real_name = Prompt.ask("Real project name (will be encrypted)")
-    description = Prompt.ask("Project description (optional, encrypted)", default="")
+    if non_interactive:
+        if not real_name:
+            print_error("Real project name required (--name) for non-interactive mode.")
+            return
+        description = ""
+    else:
+        console.print("\n[bold]Project Information[/bold]")
+        real_name = Prompt.ask("Real project name (will be encrypted)")
+        description = Prompt.ask("Project description (optional, encrypted)", default="")
 
     # Initialize
     with Progress(
@@ -747,7 +783,7 @@ def _run_dark_init():
         try:
             result = dark.initialize_dark_mode(
                 real_name=real_name,
-                owner_key_id=key_id,
+                owner_key_id=selected_key_id,
                 owner_email=key_email,
                 description=description if description else None,
             )
@@ -781,9 +817,14 @@ def _run_dark_init():
     })
 
 
-def _run_dark_encrypt():
-    """Encrypt repository to dark mode wrapper state."""
-    dark = DarkMode()
+def _run_dark_encrypt(non_interactive: bool = False, passphrase: str = None):
+    """Encrypt repository to dark mode wrapper state.
+
+    Args:
+        non_interactive: Skip confirmation prompts
+        passphrase: GPG passphrase for encryption operations
+    """
+    dark = DarkMode(passphrase=passphrase)
 
     console.print("\n[bold cyan]=== DARK Mode Encryption ===[/bold cyan]\n")
     console.print("[bold red][!] This will encrypt EVERYTHING including git history![/bold red]")
@@ -794,7 +835,7 @@ def _run_dark_encrypt():
     if name_info and name_info.get('real_name'):
         console.print(f"[dim]Project: {name_info['real_name']} -> {name_info['public_uuid']}[/dim]\n")
 
-    if not Confirm.ask("Proceed with dark mode encryption?"):
+    if not non_interactive and not Confirm.ask("Proceed with dark mode encryption?"):
         return
 
     with Progress(
@@ -836,9 +877,14 @@ def _run_dark_encrypt():
     })
 
 
-def _run_dark_decrypt():
-    """Decrypt from dark mode wrapper state."""
-    dark = DarkMode()
+def _run_dark_decrypt(non_interactive: bool = False, passphrase: str = None):
+    """Decrypt from dark mode wrapper state.
+
+    Args:
+        non_interactive: Skip confirmation prompts
+        passphrase: GPG passphrase for decryption operations
+    """
+    dark = DarkMode(passphrase=passphrase)
 
     if not dark.is_wrapper_state():
         print_error("Repository is not in dark mode encrypted state.")
@@ -942,12 +988,14 @@ def security_check():
 @click.option('--all', '-a', 'encrypt_all', is_flag=True, help='Encrypt all matching patterns')
 @click.option('--full', '-f', is_flag=True, help='FULL encryption - encrypt entire codebase into single GPG blob')
 @click.option('--dark', '-d', is_flag=True, help='DARK mode - encrypt entire repo INCLUDING git history')
-def encrypt(files: tuple, encrypt_all: bool, full: bool, dark: bool):
+@click.option('--yes', '-y', is_flag=True, help='Non-interactive mode, skip confirmations')
+@click.option('--passphrase', '-p', help='GPG passphrase (for non-interactive mode)', envvar='GITCLOAKD_PASSPHRASE')
+def encrypt(files: tuple, encrypt_all: bool, full: bool, dark: bool, yes: bool, passphrase: str):
     """Encrypt files or all sensitive files."""
 
     if dark:
         # Dark mode - encrypt EVERYTHING including git history
-        _run_dark_encrypt()
+        _run_dark_encrypt(non_interactive=yes, passphrase=passphrase)
         return
 
     if full:
@@ -989,12 +1037,14 @@ def encrypt(files: tuple, encrypt_all: bool, full: bool, dark: bool):
 @click.option('--all', '-a', 'decrypt_all', is_flag=True, help='Decrypt all encrypted files')
 @click.option('--full', '-f', is_flag=True, help='FULL decryption - decrypt entire codebase from GPG blob')
 @click.option('--dark', '-d', is_flag=True, help='DARK mode - decrypt entire repo INCLUDING git history')
-def decrypt(files: tuple, decrypt_all: bool, full: bool, dark: bool):
+@click.option('--yes', '-y', is_flag=True, help='Non-interactive mode, skip confirmations')
+@click.option('--passphrase', '-p', help='GPG passphrase (for non-interactive mode)', envvar='GITCLOAKD_PASSPHRASE')
+def decrypt(files: tuple, decrypt_all: bool, full: bool, dark: bool, yes: bool, passphrase: str):
     """Decrypt files or all encrypted files."""
 
     if dark:
         # Dark mode - decrypt EVERYTHING including git history
-        _run_dark_decrypt()
+        _run_dark_decrypt(non_interactive=yes, passphrase=passphrase)
         return
 
     if full:
